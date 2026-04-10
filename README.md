@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/gggmlduswjs/jeomgeuli_v4/actions/workflows/ci.yml/badge.svg)](https://github.com/gggmlduswjs/jeomgeuli_v4/actions/workflows/ci.yml)
 
+> 의사결정 근거·트레이드오프·결과 지표는 **[docs/PORTFOLIO.md](docs/PORTFOLIO.md)** 참조.
+
 시각장애 수험생이 국어 핵심어는 3셀 점자 모듈로 손에 익혀 시험장 점자 문제지를 빠르게 읽고, 수학 수식은 CNN 감지 + Claude Vision 자연어 설명으로 음성 학습할 수 있게 해주는 하이브리드 수능 학습 도구.
 
 **국어 모드 메인 + 수학 모드 보조. 과목 특성에 맞게 다른 접근.**
