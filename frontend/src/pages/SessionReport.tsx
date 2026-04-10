@@ -27,13 +27,22 @@ export default function SessionReport() {
   const accuracyPct = (session.accuracy * 100).toFixed(0);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-10">
+    <main className="min-h-screen px-6 py-10">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <Link to="/" className="text-gray-500 hover:text-gray-700">
-            ← 홈
+          <Link to="/" className="text-gray-600 hover:text-gray-900 underline">
+            홈으로
           </Link>
           <h1 className="text-3xl font-bold">훈련 리포트</h1>
+        </div>
+
+        <div
+          role="status"
+          aria-live="polite"
+          className="sr-only"
+        >
+          정답률 {accuracyPct}퍼센트, 총 {session.total_words}개 중{" "}
+          {session.correct_count}개 정답.
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
@@ -121,16 +130,16 @@ export default function SessionReport() {
         <div className="flex gap-3">
           <Link
             to="/training"
-            className="px-5 py-2 bg-emerald-600 text-white rounded"
+            className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded"
           >
             다시 훈련
           </Link>
-          <Link to="/" className="px-5 py-2 bg-gray-200 rounded">
+          <Link to="/" className="px-5 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded">
             홈으로
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

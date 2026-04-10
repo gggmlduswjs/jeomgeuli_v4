@@ -79,33 +79,55 @@ export default function Scan() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-10">
+    <main className="min-h-screen px-6 py-10">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <Link to="/" className="text-gray-500 hover:text-gray-700">
-            ← 홈
+          <Link to="/" className="text-gray-600 hover:text-gray-900 underline">
+            홈으로
           </Link>
           <h1 className="text-3xl font-bold">교재 스캔</h1>
         </div>
 
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={onFileChange}
-            className="mb-4"
-          />
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="visually-hidden"
+        >
+          {stage === "ocr" && "OCR 처리 중입니다"}
+          {stage === "vocab" && "핵심어를 추출하고 있습니다"}
+          {stage === "ready" &&
+            `추출 완료. 섹션 ${sections.length}개, 핵심어 ${keywords.length}개.`}
+          {stage === "error" && `오류: ${error}`}
+        </div>
+
+        <section
+          aria-labelledby="upload-heading"
+          className="bg-white rounded-xl shadow p-6 mb-6"
+        >
+          <h2 id="upload-heading" className="text-xl font-semibold mb-4">
+            이미지 업로드
+          </h2>
+          <label className="block mb-4">
+            <span className="sr-only">교재 이미지 파일 선택</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={onFileChange}
+              aria-label="교재 이미지 파일 선택"
+            />
+          </label>
           {preview && (
             <img
               src={preview}
-              alt="업로드 미리보기"
+              alt="업로드한 교재 미리보기"
               className="max-h-80 rounded border"
             />
           )}
           <button
             onClick={onExtract}
             disabled={!file || stage === "ocr" || stage === "vocab"}
-            className="mt-4 px-5 py-2 bg-blue-600 text-white rounded disabled:bg-gray-300"
+            className="mt-4 px-5 py-3 bg-blue-700 hover:bg-blue-800 text-white rounded disabled:bg-gray-300"
           >
             {stage === "ocr"
               ? "OCR 처리 중..."
@@ -113,59 +135,80 @@ export default function Scan() {
                 ? "핵심어 추출 중..."
                 : "OCR + 핵심어 추출"}
           </button>
-          {error && <p className="mt-3 text-red-600 text-sm">{error}</p>}
-        </div>
+          {error && (
+            <p role="alert" className="mt-3 text-red-700">
+              {error}
+            </p>
+          )}
+        </section>
 
         {sections.length > 0 && (
-          <div className="bg-white rounded-xl shadow p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-3">섹션 분류</h2>
-            <div className="space-y-2">
+          <section
+            aria-labelledby="sections-heading"
+            className="bg-white rounded-xl shadow p-6 mb-6"
+          >
+            <h2 id="sections-heading" className="text-lg font-semibold mb-3">
+              섹션 분류 ({sections.length})
+            </h2>
+            <ul className="space-y-2 list-none p-0">
               {sections.map((s, i) => (
-                <div
+                <li
                   key={i}
                   className={`px-3 py-2 rounded text-sm ${SECTION_COLOR[s.type]}`}
                 >
-                  <span className="text-xs font-mono text-gray-500 mr-2">
+                  <span className="text-xs font-mono text-gray-600 mr-2">
                     [{s.type}]
                   </span>
                   {s.text}
-                </div>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
         )}
 
         {keywords.length > 0 && (
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold mb-3">
-              핵심어 ({selectedIdx.size}/{keywords.length} 선택됨)
+          <section
+            aria-labelledby="keywords-heading"
+            className="bg-white rounded-xl shadow p-6"
+          >
+            <h2 id="keywords-heading" className="text-lg font-semibold mb-3">
+              핵심어 ({selectedIdx.size} / {keywords.length} 선택됨)
             </h2>
-            <div className="flex flex-wrap gap-2 mb-5">
-              {keywords.map((k, i) => (
-                <button
-                  key={i}
-                  onClick={() => toggle(i)}
-                  className={`px-3 py-1 rounded-full text-sm transition ${
-                    selectedIdx.has(i)
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
-                  title={`score: ${k.score.toFixed(3)}`}
-                >
-                  {k.word}
-                </button>
-              ))}
+            <div
+              role="group"
+              aria-label="핵심어 선택"
+              className="flex flex-wrap gap-2 mb-5"
+            >
+              {keywords.map((k, i) => {
+                const checked = selectedIdx.has(i);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => toggle(i)}
+                    role="checkbox"
+                    aria-checked={checked}
+                    aria-label={`${k.word}, 점수 ${k.score.toFixed(3)}`}
+                    className={`px-3 py-2 rounded-full text-sm transition ${
+                      checked
+                        ? "bg-emerald-700 text-white"
+                        : "bg-gray-100 text-gray-800 border border-gray-300"
+                    }`}
+                  >
+                    {k.word}
+                  </button>
+                );
+              })}
             </div>
             <button
               onClick={goToTraining}
               disabled={selectedIdx.size === 0}
-              className="px-5 py-2 bg-emerald-600 text-white rounded disabled:bg-gray-300"
+              className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded disabled:bg-gray-300"
             >
-              선택한 단어로 훈련 시작 →
+              선택한 단어로 훈련 시작
             </button>
-          </div>
+          </section>
         )}
       </div>
-    </div>
+    </main>
   );
 }

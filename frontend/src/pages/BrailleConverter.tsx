@@ -47,61 +47,91 @@ export default function BrailleConverter() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-10">
+    <main className="min-h-screen px-6 py-10">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <Link to="/" className="text-gray-500 hover:text-gray-700">
-            ← 홈
+          <Link to="/" className="text-gray-600 hover:text-gray-900 underline">
+            홈으로
           </Link>
           <h1 className="text-3xl font-bold">점자 변환기</h1>
         </div>
 
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
-          <input
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="w-full border rounded px-4 py-2 text-lg mb-4"
-            placeholder="변환할 한글"
-          />
-          <div className="flex gap-2">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {meta.length > 0 && `${meta.length}셀로 변환됨`}
+          {hwStatus}
+          {error && `오류: ${error}`}
+        </div>
+
+        <section
+          aria-labelledby="input-heading"
+          className="bg-white rounded-xl shadow p-6 mb-6"
+        >
+          <h2 id="input-heading" className="text-xl font-semibold mb-4">
+            텍스트 입력
+          </h2>
+          <label className="block mb-4">
+            <span className="sr-only">변환할 한글 텍스트</span>
+            <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="w-full border border-gray-400 rounded px-4 py-3 text-lg"
+              placeholder="변환할 한글"
+              aria-label="변환할 한글 텍스트 입력"
+            />
+          </label>
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={onConvert}
               disabled={loading || !text.trim()}
-              className="px-5 py-2 bg-slate-600 text-white rounded disabled:bg-gray-300"
+              className="px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded disabled:bg-gray-300"
             >
               {loading ? "변환 중..." : "변환"}
             </button>
             <button
               onClick={onSendHardware}
               disabled={!text.trim()}
-              className="px-5 py-2 bg-emerald-600 text-white rounded disabled:bg-gray-300"
+              aria-label="3셀 하드웨어로 점자 전송"
+              className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded disabled:bg-gray-300"
             >
               3셀 하드웨어 전송
             </button>
           </div>
-          {hwStatus && <p className="mt-3 text-sm text-gray-600">{hwStatus}</p>}
-          {error && <p className="mt-3 text-red-600 text-sm">{error}</p>}
-        </div>
+          {hwStatus && <p className="mt-3 text-gray-700">{hwStatus}</p>}
+          {error && (
+            <p role="alert" className="mt-3 text-red-700">
+              {error}
+            </p>
+          )}
+        </section>
 
         {meta.length > 0 && (
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">
+          <section
+            aria-labelledby="decomp-heading"
+            className="bg-white rounded-xl shadow p-6"
+          >
+            <h2 id="decomp-heading" className="text-lg font-semibold mb-4">
               자모 분해 ({meta.length}셀)
             </h2>
-            <div className="flex flex-wrap gap-3">
+            <ol className="flex flex-wrap gap-3 list-none p-0">
               {meta.map((m, i) => (
-                <BrailleCell
-                  key={i}
-                  pattern={m.pattern}
-                  size="md"
-                  label={`${m.jamo} · ${ROLE_LABEL[m.role]}`}
-                />
+                <li key={i}>
+                  <BrailleCell
+                    pattern={m.pattern}
+                    size="md"
+                    label={`${m.jamo} · ${ROLE_LABEL[m.role]}`}
+                  />
+                </li>
               ))}
-            </div>
-          </div>
+            </ol>
+          </section>
         )}
       </div>
-    </div>
+    </main>
   );
 }
