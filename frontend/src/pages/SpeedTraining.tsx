@@ -14,6 +14,7 @@ import { useTTS } from "../hooks/useTTS";
 import BrailleCell from "../components/BrailleCell";
 
 type Phase = "setup" | "running" | "waiting_answer" | "done";
+type InputMode = "voice" | "manual";
 
 export default function SpeedTraining() {
   const navigate = useNavigate();
@@ -27,7 +28,8 @@ export default function SpeedTraining() {
   const [session, setSession] = useState<Session | null>(null);
   const [wordIdx, setWordIdx] = useState(0);
   const [currentAttempt, setCurrentAttempt] = useState<WordAttempt | null>(null);
-  const [sendHardware, setSendHardware] = useState(true);
+  const [sendHardware, setSendHardware] = useState(false);
+  const [inputMode, setInputMode] = useState<InputMode>("voice");
   const [error, setError] = useState<string>("");
   const [statusMessage, setStatusMessage] = useState<string>("");
 
@@ -53,14 +55,23 @@ export default function SpeedTraining() {
         showStartTimeRef.current = Date.now();
         submittedForAnswerRef.current = null;
         setPhase("waiting_answer");
-        speak(`${idx + 1}번째 단어. 답을 말해주세요.`);
-        setStatusMessage(`${idx + 1} / ${total}번째 단어 출력 완료. 음성 답변 대기 중.`);
-        setTimeout(() => startListening(), 500);
+        if (inputMode === "voice") {
+          speak(`${idx + 1}번째 단어. 답을 말해주세요.`);
+          setStatusMessage(
+            `${idx + 1} / ${total}번째 단어 출력 완료. 음성 답변 대기 중.`,
+          );
+          setTimeout(() => startListening(), 500);
+        } else {
+          speak(`${idx + 1}번째 단어 출제. 정답 또는 오답을 선택하세요.`);
+          setStatusMessage(
+            `${idx + 1} / ${total}번째 단어 출력 완료. 수동 채점 대기 중.`,
+          );
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "단어 출력 실패");
       }
     },
-    [sendHardware, speak, startListening],
+    [sendHardware, inputMode, speak, startListening],
   );
 
   const onFinish = useCallback(async () => {
@@ -111,9 +122,45 @@ export default function SpeedTraining() {
     }
   }, [wordIdx, keywords, presentWord, speak, onFinish]);
 
-  // STT 결과 수신 → 자동 제출
+  /** 수동 채점 모드: 정답/오답 버튼으로 직접 제출 */
+  const manualGrade = useCallback(
+    async (isCorrect: boolean) => {
+      const s = sessionRef.current;
+      if (!s || !currentAttempt) return;
+      const responseMs = showStartTimeRef.current
+        ? Date.now() - showStartTimeRef.current
+        : undefined;
+      try {
+        await submitAnswer(s.id, {
+          attempt_id: currentAttempt.id,
+          user_answer: isCorrect ? currentAttempt.word : "(manual: wrong)",
+          response_ms: responseMs,
+        });
+        const feedback = isCorrect
+          ? "정답입니다."
+          : `오답입니다. 정답은 ${currentAttempt.word}.`;
+        setStatusMessage(feedback);
+        speak(feedback);
+        setTimeout(() => {
+          const nextIdx = wordIdx + 1;
+          if (nextIdx >= keywords.length) {
+            void onFinish();
+          } else {
+            setWordIdx(nextIdx);
+            void presentWord(s.id, keywords[nextIdx], nextIdx, keywords.length);
+          }
+        }, 1000);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "답변 제출 실패");
+      }
+    },
+    [currentAttempt, wordIdx, keywords, presentWord, speak, onFinish],
+  );
+
+  // STT 결과 수신 → 자동 제출 (voice 모드에서만)
   useEffect(() => {
     if (
+      inputMode !== "voice" ||
       phase !== "waiting_answer" ||
       !sttText ||
       !currentAttempt ||
@@ -268,13 +315,39 @@ export default function SpeedTraining() {
               </label>
             </div>
 
+            <fieldset className="mb-4">
+              <legend className="text-sm text-gray-700 mb-2">답변 입력 방식</legend>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="input-mode"
+                    value="voice"
+                    checked={inputMode === "voice"}
+                    onChange={() => setInputMode("voice")}
+                  />
+                  <span>음성 답변 (브라우저 STT)</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="input-mode"
+                    value="manual"
+                    checked={inputMode === "manual"}
+                    onChange={() => setInputMode("manual")}
+                  />
+                  <span>수동 채점 (정답/오답 버튼)</span>
+                </label>
+              </div>
+            </fieldset>
+
             <label className="flex items-center gap-2 mb-4">
               <input
                 type="checkbox"
                 checked={sendHardware}
                 onChange={(e) => setSendHardware(e.target.checked)}
               />
-              <span>3셀 하드웨어에 실제 출력</span>
+              <span>3셀 하드웨어에 실제 출력 (Arduino 연결 시)</span>
             </label>
 
             <button
@@ -319,25 +392,46 @@ export default function SpeedTraining() {
               ))}
             </div>
 
-            <div className="text-gray-700 mb-4" aria-hidden="true">
-              {listening
-                ? "듣는 중..."
-                : sttText
-                  ? `인식: "${sttText}"`
-                  : "잠시 후 마이크가 켜집니다"}
-            </div>
+            {inputMode === "voice" && (
+              <div className="text-gray-700 mb-4" aria-hidden="true">
+                {listening
+                  ? "듣는 중..."
+                  : sttText
+                    ? `인식: "${sttText}"`
+                    : "잠시 후 마이크가 켜집니다"}
+              </div>
+            )}
+
+            {inputMode === "manual" && (
+              <div className="flex justify-center gap-2 mb-4">
+                <button
+                  onClick={() => manualGrade(true)}
+                  className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded"
+                >
+                  정답 (O)
+                </button>
+                <button
+                  onClick={() => manualGrade(false)}
+                  className="px-5 py-3 bg-red-700 hover:bg-red-800 text-white rounded"
+                >
+                  오답 (X)
+                </button>
+              </div>
+            )}
 
             <div className="flex justify-center gap-2 flex-wrap">
-              <button
-                onClick={() => {
-                  startListening();
-                  speak("다시 들어봅니다.");
-                }}
-                aria-label="다시 듣기 (스페이스 키)"
-                className="px-4 py-3 bg-blue-700 hover:bg-blue-800 text-white rounded"
-              >
-                다시 듣기 (Space)
-              </button>
+              {inputMode === "voice" && (
+                <button
+                  onClick={() => {
+                    startListening();
+                    speak("다시 들어봅니다.");
+                  }}
+                  aria-label="다시 듣기 (스페이스 키)"
+                  className="px-4 py-3 bg-blue-700 hover:bg-blue-800 text-white rounded"
+                >
+                  다시 듣기 (Space)
+                </button>
+              )}
               <button
                 onClick={onSkip}
                 aria-label="건너뛰기 (S 키)"
