@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    name: Backend (Django + braille tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install minimal runtime deps
+        # torch / easyocr / sentence-transformers 는 전부 function-level
+        # lazy import 이므로 braille 테스트에는 불필요. 전체 requirements.txt
+        # 설치(~2GB) 대신 이 7개 패키지만 쓴다.
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            "Django==4.2.24" \
+            "djangorestframework==3.15.2" \
+            "django-cors-headers==4.4.0" \
+            "python-dotenv==1.0.1" \
+            "hgtk>=0.2.1" \
+            "opencv-python-headless>=4.8.0" \
+            "numpy>=1.24.0"
+
+      - name: Django system check
+        working-directory: backend
+        run: python manage.py check
+
+      - name: Run braille unit tests
+        working-directory: backend
+        run: python manage.py test apps.braille -v 2
+
+  frontend-build:
+    name: Frontend (tsc + vite build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: TypeScript check
+        working-directory: frontend
+        run: npx tsc -b
+
+      - name: Vite production build
+        working-directory: frontend
+        run: npx vite build

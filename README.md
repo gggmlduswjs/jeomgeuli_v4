@@ -1,5 +1,7 @@
 # 점글이 v4 — 음성↔점자 격차 해결기 + 수학 멀티모달 보조
 
+[![CI](https://github.com/gggmlduswjs/jeomgeuli_v4/actions/workflows/ci.yml/badge.svg)](https://github.com/gggmlduswjs/jeomgeuli_v4/actions/workflows/ci.yml)
+
 시각장애 수험생이 국어 핵심어는 3셀 점자 모듈로 손에 익혀 시험장 점자 문제지를 빠르게 읽고, 수학 수식은 CNN 감지 + Claude Vision 자연어 설명으로 음성 학습할 수 있게 해주는 하이브리드 수능 학습 도구.
 
 **국어 모드 메인 + 수학 모드 보조. 과목 특성에 맞게 다른 접근.**
@@ -131,6 +133,21 @@ jeomgeuli_v4/
 ├── docs/                      # 기획 문서
 └── README.md
 ```
+
+---
+
+## 빠른 시연 (Arduino·API 키·마이크 없이)
+
+심사나 포트폴리오 리뷰 환경처럼 하드웨어나 외부 API 키가 없는 상태에서도 속도 훈련 전체 흐름을 돌려볼 수 있도록 데모 모드가 내장돼 있습니다.
+
+1. 백엔드 실행: `cd backend && python manage.py migrate && python manage.py runserver`
+2. 프론트엔드 실행: `cd frontend && npm install && npm run dev`
+3. 브라우저에서 `http://localhost:5173` 접속
+4. 홈 화면 하단 **"빠른 시연"** 섹션에서 샘플 지문 하나 선택 (문학 해석 / 생태계 / 근대화)
+5. 속도 훈련 페이지에서 **"수동 채점 (정답/오답 버튼)"** 모드 선택 후 훈련 시작
+6. 단어별로 정답·오답 버튼 클릭 → 자동으로 다음 단어 → 끝나면 리포트 페이지로 이동
+
+이 경로는 OCR · Sentence-BERT · Claude Vision · 3셀 하드웨어 · 브라우저 STT 전부 우회하고 훈련 세션 · 점자 변환 · 반응 시간 집계 · 리포트 UI만 보여줍니다. 실제 시나리오를 확인하려면 아래 전체 설치 가이드를 따르세요.
 
 ---
 
