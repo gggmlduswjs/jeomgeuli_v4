@@ -20,9 +20,12 @@ jobs:
           cache: pip
 
       - name: Install minimal runtime deps
-        # torch / easyocr / sentence-transformers 는 전부 function-level
-        # lazy import 이므로 braille 테스트에는 불필요. 전체 requirements.txt
-        # 설치(~2GB) 대신 이 7개 패키지만 쓴다.
+        # torch / easyocr / sentence-transformers / langchain 은 전부
+        # function-level lazy import 이므로 CI 단위 테스트에는 불필요.
+        # 전체 requirements.txt 설치(~2GB) 대신 이 8개 패키지만 쓴다.
+        # scikit-learn 은 vocabulary tfidf 전략에서 모듈 최상단은 아니지만
+        # tests 가 extract_tfidf 를 직접 호출하므로 필요.
+        # pyserial 은 hardware 연결 실패 경로 검증을 위해 설치.
         run: |
           python -m pip install --upgrade pip
           pip install \
@@ -32,15 +35,24 @@ jobs:
             "python-dotenv==1.0.1" \
             "hgtk>=0.2.1" \
             "opencv-python-headless>=4.8.0" \
-            "numpy>=1.24.0"
+            "numpy>=1.24.0" \
+            "scikit-learn>=1.3.0" \
+            "pyserial>=3.5"
 
       - name: Django system check
         working-directory: backend
         run: python manage.py check
 
-      - name: Run braille unit tests
+      - name: Run unit tests (braille + textbook + vocabulary + training + hardware)
         working-directory: backend
-        run: python manage.py test apps.braille -v 2
+        run: |
+          python manage.py test \
+            apps.braille \
+            apps.textbook \
+            apps.vocabulary \
+            apps.training \
+            apps.hardware \
+            -v 2
 
   frontend-build:
     name: Frontend (tsc + vite build)

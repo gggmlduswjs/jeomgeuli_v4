@@ -57,7 +57,7 @@ class BrailleHardwareManager:
             time.sleep(2)  # Arduino 부팅 대기
             return True
         except Exception as e:
-            print(f"⚠️ 시리얼 연결 실패: {e}")
+            print(f"[hardware] 시리얼 연결 실패: {e}")
             self._serial = None
             return False
 
@@ -96,7 +96,7 @@ class BrailleHardwareManager:
                 self._serial.write(bytes_data)
                 self._serial.flush()
             except Exception as e:
-                print(f"⚠️ 시리얼 전송 실패: {e}")
+                print(f"[hardware] 시리얼 전송 실패: {e}")
                 return False
 
         return True
